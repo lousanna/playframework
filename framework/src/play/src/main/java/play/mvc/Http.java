@@ -1875,6 +1875,21 @@ public class Http {
         }
 
         /**
+         * Converts to a Java value
+         *
+         * @param <A> the type of the return value.
+         * @param clazz Expected Java value type.
+         * @return the return value.
+         */
+        public <A> A parseJson(Class<A> clazz) {
+            try {
+                return Json.mapper().treeToValue(asJson(), clazz);
+            } catch(Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        /**
          * The request content as a ByteString.
          *
          * This makes a best effort attempt to convert the parsed body to a ByteString, if it knows how. This includes

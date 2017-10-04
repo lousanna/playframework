@@ -8,9 +8,13 @@ import java.time.Instant
 import java.util.Optional
 
 import com.fasterxml.jackson.databind.{ JsonNode, ObjectMapper }
-
 import org.specs2.mutable.Specification
 import org.specs2.specification.Scope
+import play.api.http.HttpConfiguration
+import play.api.libs.typedmap.TypedMap
+import play.api.mvc.Headers
+import play.api.mvc.request.{ DefaultRequestFactory, RemoteConnection, RequestTarget }
+import play.mvc.Http.RequestBody
 
 class JavaJsonSpec extends Specification {
   sequential
@@ -40,6 +44,18 @@ class JavaJsonSpec extends Specification {
       .set("baz", mapper.createArrayNode().add(1).add(2).add(3))
 
     Json.setObjectMapper(mapper)
+
+    val dummyRequest = {
+      new DefaultRequestFactory(HttpConfiguration()).createRequest(
+        connection = RemoteConnection("", false, None),
+        method = "GET",
+        target = RequestTarget("/", "", Map.empty),
+        version = "",
+        headers = Headers(),
+        attrs = TypedMap.empty,
+        new RequestBody(testJsonString)
+      )
+    }
   }
 
   "Json" should {
@@ -71,6 +87,13 @@ class JavaJsonSpec extends Specification {
     }
     "ignore unknown fields when deserializing to a POJO" in new JsonScope(Json.newDefaultMapper()) {
       val javaPOJO = Json.fromJson(testJson, classOf[JavaPOJO])
+      javaPOJO.getBar must_== "baz"
+      javaPOJO.getFoo must_== "bar"
+      javaPOJO.getInstant must_== Instant.ofEpochSecond(1425435861l)
+      javaPOJO.getOptNumber must_== Optional.of(55555)
+    }
+    "deserialize to a POJO from request body" in new JsonScope {
+      val javaPOJO = dummyRequest.body.parseJson(classOf[JavaPOJO])
       javaPOJO.getBar must_== "baz"
       javaPOJO.getFoo must_== "bar"
       javaPOJO.getInstant must_== Instant.ofEpochSecond(1425435861l)
